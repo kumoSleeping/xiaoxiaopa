@@ -1,4 +1,4 @@
-# 「一」这是一个kumo对接onebot平台的bot的框架
+# 「一」这是一个kumo自用对接onebot平台的bot的框架
 
 ## 小小趴框架是如何工作的？
 ### xxp_l.py
