@@ -1,5 +1,4 @@
-# 这是一个kumo自用的onebot平台bot
-
+# 「一」这是一个kumo对接onebot平台的bot的框架
 
 ## 小小趴框架是如何工作的？
 ### xxp_l.py
@@ -20,7 +19,7 @@ xxp_c.py作为一个Flask应用，监听来自xxp_l.py的消息。一旦收到�
 一起加油吧～
 爱你们
 
-# 环境以及部署
+# 「二」环境以及部署
 
 ## 1.安装python3以及必须库
 我们推荐您安装python3.9以上的版本，例如python3.11/3.10
@@ -114,7 +113,7 @@ if __name__ == '__main__':
     app.run(port=send_port, host='0.0.0.0', debug=False, use_reloader=False)
 ```
 
-# 添加一个插件
+# 「三」添加一个插件
 
 ## 1.在xxp_c.py中注册
 一般情况下只需要注册群聊
@@ -182,7 +181,7 @@ API.send(f"[CQ:image,file={path}bpk/小小趴/1.jpg]")
 API.send(cq_img('bpk/小小趴/1.jpg'))
 ```
 
-# 连接多个go-cqhtp
+# 「四」连接多个go-cqhtp
 
 ## 1.在config文件夹新建bot2.json
 ### *bot2.json*
