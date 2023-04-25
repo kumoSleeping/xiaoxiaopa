@@ -1,0 +1,5 @@
+{
+    "qq_number": 123456789,
+    "http_port": 8080,
+    "ws_port": 8888
+}
