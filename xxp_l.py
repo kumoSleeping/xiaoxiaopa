@@ -26,7 +26,7 @@ qq_send_dict = {
 
 with open('config/path.json', 'r', encoding='utf-8') as f:
     path_json = json.load(f)
-path_str = path_json['path']
+path_str = path_json[0]['path']
 
 
 # 路径 🔧
