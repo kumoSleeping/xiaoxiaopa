@@ -75,7 +75,7 @@ qq_number填写bot的QQ号
 ```json
 [
     {
-        "administer": "file://"
+        "path": "file://"
     }
 ]
 ```
@@ -83,7 +83,7 @@ qq_number填写bot的QQ号
 ```json
 [
     {
-        "administer": "file:///"
+        "path": "file:///"
     }
 ]
 ```
