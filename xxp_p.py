@@ -12,8 +12,6 @@ os.chdir(current_dir)
 
 path = xiaoxiaopa_control.path
 
-# 从主文件导入管理员的QQ号
-top_administer_id = xiaoxiaopa_control.top_administer_id
 
 qq_send_dict = xiaoxiaopa_control.qq_send_dict
 
