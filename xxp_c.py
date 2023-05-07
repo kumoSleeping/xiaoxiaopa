@@ -3,52 +3,124 @@ import requests
 import xxp_p as xiaoxiaopa_plugin
 import os
 import json
-
+import inspect
 
 # 获取当前文件所在的目录
 current_dir = os.path.dirname(__file__)
 # 切换到当前文件所在的目录
 os.chdir(current_dir)
 
+
 # 用于aiohttp转发到xxp_c.py，如果需要修改请修改请同步修改xxp_c.py
 send_port = 12709
 
 with open('config/bot1.json', 'r', encoding='utf-8') as f:
     config_1 = json.load(f)
-
 port1 = config_1['ws_port']  # ws端口
+
+# with open('config/bot2.json', 'r', encoding='utf-8') as f:
+#     config_2 = json.load(f)
+# port2 = config_2['ws_port']  # ws端口
+#
+# with open('config/bot3.json', 'r', encoding='utf-8') as f:
+#     config_3 = json.load(f)
+# port3 = config_3['ws_port']  # ws端口
+
+# 根据「QQ号」获取「http上报端口」
 qq_send_dict = {
-    config_1['qq_number']: config_1['http_port']
-}  # 根据「QQ号」获取「http上报端口」
+    config_1['qq_number']: config_1['http_port'],
+    # config_2['qq_number']: config_2['http_port'],
+    # config_3['qq_number']: config_3['http_port'],
+}
 
 
 with open('config/path.json', 'r', encoding='utf-8') as f:
     path_json = json.load(f)
-path_str = path_json[0]['path']
+path_str = path_json['path']
 
 
 # 路径 🔧
 path = path_str + current_dir + '/'
 
 
-app = Flask(__name__)
+# 内部管理员QQ 🔧
+top_administer_id = [1528593481]
 
-# 全部插件
-plugins = [
-    {"plugin": "ran", "nickname": "事件骰子"},
-    {"plugin": "jue", "nickname": "撅@"},
-    {"plugin": "be_poke", "nickname": "戳一戳"},
-    {"plugin": "test", "nickname": "测试用"},
-    {"plugin": "echo", "nickname": "管理员指令"}
-]
-# 私聊插件
-plugins_private = [
-    {"plugin_private": "ran", "nickname": "事件骰子"}
-]
+with open('config/plugins.json', 'r', encoding='utf-8') as f:
+    plugins = json.load(f)
+    
+with open('config/plugins_private.json', 'r', encoding='utf-8') as f:
+    plugins_private = json.load(f)
+
+app = Flask(__name__)
 
 
 # 这是一个类，用于处理发送消息的操作
 class API:
+    # 标记为静态
+    @staticmethod
+    def get_msg():
+        '''用于每个插件（函数）获取：
+        mm（消息），user_id（发送者QQ），group_id（群号），self_id（机器人QQ）
+        四个参数
+        并且进行「插件管理」和「xxp标记」的判断'''
+        msg = request.get_json()
+        try:
+            mm = msg['message']
+        except:
+            mm = ''
+        try:
+            user_id = msg['user_id']
+        except:
+            user_id = -1
+        try:
+            group_id = msg['group_id']
+        except:
+            group_id = -1       
+        try:
+            self_id = msg['self_id']
+        except:
+            self_id = -1
+            
+        '''这是一个插件管理 当插件存在黑名单中时，将mm置空，self_id置为-1
+        1.mm防止消息类型被启用
+        2.self_id置为-1的原因是为了防止戳一戳被启用'''
+        # 使用inspect模块获取当前函数名
+        current_frame = inspect.currentframe()
+        caller_frame = current_frame.f_back
+        function_name = caller_frame.f_code.co_name
+        
+        if os.path.exists('plugin/{}black_list.json'.format(group_id)):
+            # '''如果该群存在 black_list 的 JSON 文件'''
+            with open('plugin/{}black_list.json'.format(group_id), 'r', encoding='utf-8') as f:
+                blacklist = json.load(f)
+            # print(blacklist)
+            # print(function_name)
+            is_blacklisted = any(plugin_dict['plugin'] == function_name for plugin_dict in blacklist)
+            if is_blacklisted:
+                # print(f"插件 '{function_name}' 在黑名单中")
+                mm = ''
+                self_id = -1
+
+        '''这是一个xxp标记管理 当插件存在xxp标记时，
+        1.mm以xxp / 小小趴 开头时，程序会自动将mm中的xxp / 小小趴 去掉
+        2.mm不以xxp / 小小趴 开头时，程序会自动将mm置空,将user_id置为-1，self_id置为-1
+        3.插件管理会被优先执行，所以带有xxp标记的插件仍然可以被黑名单屏蔽'''
+        if os.path.exists('plugin/{}negative_list.json'.format(group_id)):
+            # '''如果该群存在 +xxp 的 JSON 文件'''
+            with open('plugin/{}negative_list.json'.format(group_id), 'r', encoding='utf-8') as f:
+                negative_list = json.load(f)
+            is_negative_list = any(plugin_dict['plugin'] == function_name for plugin_dict in negative_list)
+            if is_negative_list:
+                print(f"插件 '{function_name}' 含有+xxp标记")
+                if mm.startswith('xxp') or mm.startswith('小小趴'):
+                    mm = mm[3:]
+                else:
+                    mm = ''
+                    self_id = -1
+                    
+        return mm, user_id, group_id, self_id
+        
     # 标记为静态
     @staticmethod
     # 定义标准send，用于发送大部分通过接收到「消息」进行的「回复」
@@ -60,129 +132,43 @@ class API:
 
         # print(msg)
         # 先通过一个赋值group_or_private，判断是群聊消息还是私聊消息
-        group_or_private = msg['message_type']
-        if 'group' == group_or_private:
+        try:
+            message_type = msg['message_type']
+        except:
+            message_type = 'group'
+        if 'group' == message_type:
             group_id = msg['group_id']
             send_to_gocq = {
-                "message_type": group_or_private,
+                "message_type": message_type,
                 "group_id": str(group_id),
                 "message": message,
             }
         else:
             user_id = msg['user_id']
             send_to_gocq = {
-                "message_type": group_or_private,
+                "message_type": message_type,
                 "user_id": user_id,
                 "message": message
             }
         # 这个是把小小趴产生的「消息」发给gocq，然后让gocq发到QQ里
         # send_port是上面的「gocq监听端口」
         url = "http://127.0.0.1:{}/send_msg".format(send_port_)
-        print(send_to_gocq)
 
-        requests.get(url, params=send_to_gocq)
-
-    # 被戳发的信息 仅群聊 前提协议支持
-    @staticmethod
-    def send_by_poke(hello_qq):
-        msg = request.get_json()
-
-        send_port_ = qq_send_dict.get(msg['self_id'])
-        print([send_port_])
-
-        group_id = msg['group_id']
-        papa = {
-            "group_id": str(group_id),
-            "message": hello_qq,
-        }
-        url = "http://127.0.0.1:{}/send_msg".format(send_port_)
-
-        requests.get(url, params=papa)
+        requests.post(url, json=send_to_gocq)
 
 
 @app.route('/', methods=["POST"])
 def post_data():
-    # global send_port
-    # 获取请求中的 JSON 数据
-    msg = request.get_json()
-    print(msg)
-
-    # 如果请求的类型是 提醒
-    if msg['post_type'] in ['notice']:
-        group_id = msg.get('group_id')
-        if not group_id:
-            return ''
-        # 如果该群存在插件管理的 JSON 文件
-        blacklist_file = f'plugin/{group_id}black_list.json'
-        if not os.path.exists(blacklist_file):
-            xiaoxiaopa_plugin.be_poke()
-            return ''
-        # print('插件管理已启用')
-        with open(blacklist_file, 'r', encoding='utf-8') as f:
-            blacklist = json.load(f)
-
-        # 遍历插件列表
-        for plugin in [{"plugin": "be_poke", "nickname": "她妈的老子不会json呜呜呜呜呜"}]:
-            # 检查是否在黑名单中
-            if any(plugin_dict['plugin'] == plugin['plugin'] for plugin_dict in blacklist):
-                continue
-
-            xiaoxiaopa_plugin.be_poke()
-
-    # 如果请求的类型是 消息
-    if msg['post_type'] in ['message']:
-        # 区分群聊和私聊
-
-        group_or_private = msg['message_type']
-        # 就是说，如果确定是/bank 这样的查询help的插件 就全部启用
-        if 'group' == group_or_private:
-            group_id = msg['group_id']
-            mm_help = msg['message'].replace('/', '')
-            found = any(mm_help in p['plugin'] for p in plugins)
-            # 这个函数目的是当用「/指令名」的时候加载所有插件以查询help
-            if found:
-                # 启用sb_plugin插件管理
-                xiaoxiaopa_plugin.sb_plugin()
-                for plugin in plugins:
-                    # 使用getattr()动态获取相应的函数
-                    func = getattr(xiaoxiaopa_plugin, plugin['plugin'])
-                    # 调用函数
-                    func()
-            elif os.path.exists('plugin/{}black_list.json'.format(group_id)):
-                xiaoxiaopa_plugin.sb_plugin()
-                with open('plugin/{}black_list.json'.format(group_id), 'r', encoding='utf-8') as f:
-                    blacklist = json.load(f)
-                    # print(blacklist)
-                # 按照json配制启用模块
-                for plugin in plugins:
-                    # 判断是否在黑名单中
-                    if any(plugin_dict['plugin'] == plugin['plugin'] for plugin_dict in blacklist):
-                        pass
-                    else:
-                        # 使用getattr()动态获取相应的函数
-                        func = getattr(xiaoxiaopa_plugin, plugin['plugin'])
-                        # 调用函数
-                        func()
-            else:
-                # 启用sb_plugin插件管理
-                xiaoxiaopa_plugin.sb_plugin()
-                for plugin in plugins:
-                    # 使用getattr()动态获取相应的函数
-                    func = getattr(xiaoxiaopa_plugin, plugin['plugin'])
-                    # 调用函数
-                    func()
-        else:
-            # 加载私聊插件
-            for plugin_private in plugins_private:
-                # 使用getattr()动态获取相应的函数
-                func = getattr(xiaoxiaopa_plugin, plugin_private['plugin_private'])
-                print(plugin_private['plugin_private'])
-                # 调用函数
-                func()
+    '''无论是什么类型消息都要先启用sb_plugin插件（插件管理）
+    '''
+    xiaoxiaopa_plugin.sb_plugin()
+    for plugin in plugins:
+        # 使用getattr()动态获取相应的函数
+        func = getattr(xiaoxiaopa_plugin, plugin['plugin'])
+        # 调用函数
+        func()
     return "OK"
 
-
-print(
-    '喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵喵')
+print('开始重新运行喵！')
 if __name__ == '__main__':
     app.run(port=send_port, host='0.0.0.0', debug=True, use_reloader=True)

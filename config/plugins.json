@@ -1,0 +1,6 @@
+[
+    {"plugin": "echo", "nickname": "回复一样的话"},
+    {"plugin": "jue", "nickname": "撅@"},
+    {"plugin": "jpg", "nickname": "生成图"},
+    {"plugin": "echo", "nickname": "管理员指令"}
+]
