@@ -25,6 +25,7 @@ xxp_c.py作为一个Flask应用，监听来自xxp_l.py的消息。一旦收到�
 
 ## 1.安装python3以及必须库
 [python官网](https://www.python.org/downloads/)
+
 我们推荐您安装python3.9以上的版本，例如python3.11/3.10
 #### 必须库
 ```shell
@@ -37,7 +38,9 @@ pip3 install flask aiohttp asyncio websockets requests pillow
 
 ## 2.安装和配置go-cqhttp
 [go-cqhttp帮助中心](https://docs.go-cqhttp.org/guide/)
+
 [go-cqhttp项目下载](https://github.com/Mrs4s/go-cqhttp/releases)
+
 在官网下载最新版，按照官网教程创建出yaml以后，用下面的配置覆盖掉原来的部分
 ```yaml
 # 连接服务列表
@@ -159,7 +162,7 @@ bot: [图片]
 ## 1.注册插件
 ### 在config文件夹中的plugins.json中注册全部/群聊插件
 ### 在config文件夹中的private_plugins.json中注册私聊插件
-**一般情况下只需要注册群聊注册私聊插件需要注意是否能运行**
+**一般情况下只需要注册群聊，注册私聊插件需要注意是否能运行**
 **注意句末的英文逗号「 , 」**
 
 >{"plugin": "函数名", "nickname": "描述"},
@@ -268,6 +271,7 @@ qq_send_dict = {
 
 ## 4.修改 xxp_l.py，以读取QQ号/上报端口 信息
 **切换到 xxp_l.py 文件，重复上面「 3. 」的操作就可以了**
+### 别漏了这一步（（
 
 ## 5.在 xxp_l.py 的 start_servers 函数里添加协程
 找到如下代码
