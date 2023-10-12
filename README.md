@@ -1,5 +1,17 @@
 # <span style="color: orange;">这是一个kumo自用对接onebot平台的bot的框架</span>
 
+
+
+
+
+# 此项目已停用。
+***
+
+
+
+
+
+
 # 「一」不用读这个，直接看下面的部署教程就行了（（
 ### xxp_l.py
 xxp_l.py使用websockets连接多个go-cq实例，并接收来自它们的信息。它使用aiohttp异步框架将接收到的信息转发到Flask主进程xxp_c.py。
